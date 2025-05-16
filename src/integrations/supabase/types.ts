@@ -9,7 +9,81 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      medications: {
+        Row: {
+          active_ingredient: string
+          contraindications: string[]
+          created_at: string
+          dosage: string
+          dosage_form: string
+          id: string
+          name: string
+          side_effects: string[]
+          source: string | null
+          used_for: string[]
+        }
+        Insert: {
+          active_ingredient: string
+          contraindications: string[]
+          created_at?: string
+          dosage: string
+          dosage_form: string
+          id?: string
+          name: string
+          side_effects: string[]
+          source?: string | null
+          used_for: string[]
+        }
+        Update: {
+          active_ingredient?: string
+          contraindications?: string[]
+          created_at?: string
+          dosage?: string
+          dosage_form?: string
+          id?: string
+          name?: string
+          side_effects?: string[]
+          source?: string | null
+          used_for?: string[]
+        }
+        Relationships: []
+      }
+      symptom_categories: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          possible_causes: string[]
+          recommended_medications: string[]
+          seek_medical_attention: boolean
+          self_care_advice: string[]
+          source: string | null
+          symptoms: string[]
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          possible_causes: string[]
+          recommended_medications: string[]
+          seek_medical_attention?: boolean
+          self_care_advice: string[]
+          source?: string | null
+          symptoms: string[]
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          possible_causes?: string[]
+          recommended_medications?: string[]
+          seek_medical_attention?: boolean
+          self_care_advice?: string[]
+          source?: string | null
+          symptoms?: string[]
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

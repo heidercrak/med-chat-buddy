@@ -1,5 +1,11 @@
 
-import { findMatchingCategories, checkForEmergencySymptoms, getMedicationsByIds, getWarningMessage } from "../data/medicationsDB";
+import { 
+  findMatchingCategories, 
+  checkForEmergencySymptoms, 
+  getMedicationsByIds, 
+  getWarningMessage 
+} from "../services/supabaseService";
+import { SymptomCategory, Medication } from "../services/supabaseService";
 
 export interface BotResponse {
   message: string;
@@ -8,9 +14,9 @@ export interface BotResponse {
   recommendedActions?: string[];
 }
 
-export const processUserSymptoms = (userInput: string): BotResponse => {
+export const processUserSymptoms = async (userInput: string): Promise<BotResponse> => {
   // Check for emergency symptoms first
-  const isEmergency = checkForEmergencySymptoms(userInput);
+  const isEmergency = await checkForEmergencySymptoms(userInput);
   
   if (isEmergency) {
     return {
@@ -21,8 +27,8 @@ export const processUserSymptoms = (userInput: string): BotResponse => {
     };
   }
 
-  // Find matching symptom categories
-  const matchingCategories = findMatchingCategories(userInput);
+  // Find matching symptom categories from Supabase
+  const matchingCategories = await findMatchingCategories(userInput);
   
   if (matchingCategories.length === 0) {
     return {
@@ -40,15 +46,15 @@ export const processUserSymptoms = (userInput: string): BotResponse => {
 
   matchingCategories.forEach(category => {
     responseMessage += `\n\n**${category.name}**:\n`;
-    responseMessage += `Causas posibles: ${category.possibleCauses.join(", ")}\n`;
+    responseMessage += `Causas posibles: ${category.possible_causes.join(", ")}\n`;
     
     if (category.source) {
       responseMessage += `Fuente: ${category.source}\n`;
     }
     
     // Add medication recommendations if available
-    if (category.recommendedMedications.length > 0) {
-      category.recommendedMedications.forEach(medId => {
+    if (category.recommended_medications.length > 0) {
+      category.recommended_medications.forEach(medId => {
         if (!allMedicationIds.includes(medId)) {
           allMedicationIds.push(medId);
         }
@@ -56,26 +62,26 @@ export const processUserSymptoms = (userInput: string): BotResponse => {
     }
     
     // Add self-care advice
-    category.selfCareAdvice.forEach(advice => {
+    category.self_care_advice.forEach(advice => {
       if (!allSelfCareAdvice.includes(advice)) {
         allSelfCareAdvice.push(advice);
       }
     });
     
     // Check if medical attention is recommended
-    if (category.seekMedicalAttention) {
+    if (category.seek_medical_attention) {
       shouldSeekMedicalAttention = true;
     }
   });
   
   // Add medication details to response
   if (allMedicationIds.length > 0) {
-    const recommendedMeds = getMedicationsByIds(allMedicationIds);
+    const recommendedMeds = await getMedicationsByIds(allMedicationIds);
     responseMessage += "\n**Medicamentos de venta libre que podrían ayudar**:\n";
     
     recommendedMeds.forEach(med => {
-      responseMessage += `- **${med.name}** (${med.activeIngredient}): ${med.dosage}\n`;
-      responseMessage += `  Usado para: ${med.usedFor.join(", ")}\n`;
+      responseMessage += `- **${med.name}** (${med.active_ingredient}): ${med.dosage}\n`;
+      responseMessage += `  Usado para: ${med.used_for.join(", ")}\n`;
       if (med.contraindications.length > 0) {
         responseMessage += `  No usar si tiene: ${med.contraindications.join(", ")}\n`;
       }

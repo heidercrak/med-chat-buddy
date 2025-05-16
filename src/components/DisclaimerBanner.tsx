@@ -2,7 +2,7 @@
 import React from 'react';
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
-import { getWarningMessage } from '../data/medicationsDB';
+import { getWarningMessage } from '../services/supabaseService';
 
 const DisclaimerBanner: React.FC = () => {
   return (
