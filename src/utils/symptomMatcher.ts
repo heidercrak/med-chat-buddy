@@ -42,6 +42,10 @@ export const processUserSymptoms = (userInput: string): BotResponse => {
     responseMessage += `\n\n**${category.name}**:\n`;
     responseMessage += `Causas posibles: ${category.possibleCauses.join(", ")}\n`;
     
+    if (category.source) {
+      responseMessage += `Fuente: ${category.source}\n`;
+    }
+    
     // Add medication recommendations if available
     if (category.recommendedMedications.length > 0) {
       category.recommendedMedications.forEach(medId => {
@@ -75,6 +79,9 @@ export const processUserSymptoms = (userInput: string): BotResponse => {
       if (med.contraindications.length > 0) {
         responseMessage += `  No usar si tiene: ${med.contraindications.join(", ")}\n`;
       }
+      if (med.source) {
+        responseMessage += `  Fuente: ${med.source}\n`;
+      }
     });
   }
   
@@ -102,5 +109,5 @@ export const processUserSymptoms = (userInput: string): BotResponse => {
 };
 
 export const getInitialBotMessage = (): string => {
-  return "Hola, soy MediBot, un asistente médico virtual. Puedo sugerir medicamentos de venta libre para síntomas comunes. ¿Cómo puedo ayudarte hoy? Por favor, describe tus síntomas.";
+  return "Hola, soy MediBot, un asistente médico virtual. Puedo sugerir medicamentos de venta libre para síntomas comunes. ¿Cómo puedo ayudarte hoy? Por favor, describe tus síntomas con el mayor detalle posible.";
 };

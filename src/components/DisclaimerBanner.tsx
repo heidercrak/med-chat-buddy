@@ -10,6 +10,9 @@ const DisclaimerBanner: React.FC = () => {
       <AlertCircle className="h-4 w-4 text-warning" />
       <AlertDescription className="text-sm text-gray-700">
         {getWarningMessage()}
+        <div className="mt-1 text-xs text-gray-500">
+          Información basada en fuentes médicas como MedlinePlus, FDA, CDC y OMS.
+        </div>
       </AlertDescription>
     </Alert>
   );
