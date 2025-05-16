@@ -81,23 +81,38 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     dispatch({ type: "SET_PROCESSING", payload: true });
     
     // Process the message and get response
-    setTimeout(() => {
-      const response = processUserSymptoms(message);
-      
-      // Add bot response to chat
-      dispatch({
-        type: "ADD_BOT_MESSAGE",
-        payload: {
-          id: Date.now().toString(),
-          content: response.message,
-          sender: "bot",
-          timestamp: new Date(),
-          isEmergency: response.isEmergency
-        }
-      });
-      
-      // Set processing state back to false
-      dispatch({ type: "SET_PROCESSING", payload: false });
+    setTimeout(async () => {
+      try {
+        // Wait for the Promise to resolve
+        const response = await processUserSymptoms(message);
+        
+        // Now we can safely access properties on the resolved response
+        dispatch({
+          type: "ADD_BOT_MESSAGE",
+          payload: {
+            id: Date.now().toString(),
+            content: response.message,
+            sender: "bot",
+            timestamp: new Date(),
+            isEmergency: response.isEmergency
+          }
+        });
+      } catch (error) {
+        console.error("Error processing symptoms:", error);
+        dispatch({
+          type: "ADD_BOT_MESSAGE",
+          payload: {
+            id: Date.now().toString(),
+            content: "Lo siento, ocurrió un error al procesar tu consulta. Por favor, intenta nuevamente.",
+            sender: "bot",
+            timestamp: new Date(),
+            isEmergency: false
+          }
+        });
+      } finally {
+        // Set processing state back to false
+        dispatch({ type: "SET_PROCESSING", payload: false });
+      }
     }, 1000); // Simulated delay for natural conversation feel
   };
 
