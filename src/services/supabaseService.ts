@@ -44,6 +44,8 @@ export async function getAllMedications(): Promise<Medication[]> {
 export async function getMedicationsByIds(ids: string[]): Promise<Medication[]> {
   if (!ids || ids.length === 0) return [];
   
+  console.log("Buscando medicamentos con IDs:", ids);
+  
   const { data, error } = await supabase
     .from('medications')
     .select('*')
@@ -54,6 +56,7 @@ export async function getMedicationsByIds(ids: string[]): Promise<Medication[]> 
     return [];
   }
   
+  console.log("Medicamentos encontrados:", data ? data.length : 0);
   return data || [];
 }
 
@@ -71,20 +74,75 @@ export async function getAllSymptomCategories(): Promise<SymptomCategory[]> {
   return data || [];
 }
 
+// Normalizar texto para comparaciones (elimina acentos, convierte a minúsculas)
+function normalizeText(text: string): string {
+  return text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+}
+
 // Buscar categorías de síntomas que coincidan con el texto de entrada del usuario
 export async function findMatchingCategories(userInput: string): Promise<SymptomCategory[]> {
-  const userInputLower = userInput.toLowerCase();
+  const userInputNormalized = normalizeText(userInput);
+  console.log("Texto de usuario normalizado:", userInputNormalized);
   
   // Obtener todas las categorías de síntomas
-  const categories = await getAllSymptomCategories();
+  const { data: categories, error } = await supabase
+    .from('symptom_categories')
+    .select('*');
+  
+  if (error) {
+    console.error('Error fetching symptom categories:', error);
+    return [];
+  }
+  
+  if (!categories || categories.length === 0) {
+    console.log("No se encontraron categorías de síntomas");
+    return [];
+  }
+  
+  console.log(`Buscando coincidencias en ${categories.length} categorías`);
   
   // Filtrar categorías que coincidan con los síntomas del usuario
-  return categories.filter(category => {
+  const matchingCategories = categories.filter(category => {
     // Verificar si alguno de los síntomas de la categoría está en el texto del usuario
-    return category.symptoms.some(symptom => 
-      userInputLower.includes(symptom.toLowerCase())
-    );
+    const hasMatch = category.symptoms.some(symptom => {
+      const normalizedSymptom = normalizeText(symptom);
+      const isMatch = userInputNormalized.includes(normalizedSymptom);
+      if (isMatch) {
+        console.log(`Coincidencia encontrada: "${symptom}" en categoría "${category.name}"`);
+      }
+      return isMatch;
+    });
+    
+    return hasMatch;
   });
+  
+  console.log(`Se encontraron ${matchingCategories.length} categorías coincidentes`);
+  
+  // Si no hay coincidencias exactas, buscar coincidencias parciales por palabras
+  if (matchingCategories.length === 0) {
+    console.log("Buscando coincidencias parciales por palabras");
+    const words = userInputNormalized.split(/\s+/);
+    
+    const partialMatches = categories.filter(category => {
+      return category.symptoms.some(symptom => {
+        const normalizedSymptom = normalizeText(symptom);
+        return words.some(word => {
+          // Solo considerar palabras con longitud significativa
+          if (word.length < 4) return false;
+          const isPartialMatch = normalizedSymptom.includes(word);
+          if (isPartialMatch) {
+            console.log(`Coincidencia parcial: palabra "${word}" en síntoma "${symptom}" de categoría "${category.name}"`);
+          }
+          return isPartialMatch;
+        });
+      });
+    });
+    
+    console.log(`Se encontraron ${partialMatches.length} coincidencias parciales`);
+    return partialMatches;
+  }
+  
+  return matchingCategories;
 }
 
 // Verificar si hay síntomas de emergencia en el texto del usuario

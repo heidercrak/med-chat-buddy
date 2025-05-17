@@ -15,6 +15,8 @@ export interface BotResponse {
 }
 
 export const processUserSymptoms = async (userInput: string): Promise<BotResponse> => {
+  console.log("Procesando entrada de usuario:", userInput);
+  
   // Check for emergency symptoms first
   const isEmergency = await checkForEmergencySymptoms(userInput);
   
@@ -29,6 +31,7 @@ export const processUserSymptoms = async (userInput: string): Promise<BotRespons
 
   // Find matching symptom categories from Supabase
   const matchingCategories = await findMatchingCategories(userInput);
+  console.log("Categorías encontradas:", matchingCategories.length, matchingCategories.map(c => c.name));
   
   if (matchingCategories.length === 0) {
     return {
@@ -53,7 +56,7 @@ export const processUserSymptoms = async (userInput: string): Promise<BotRespons
     }
     
     // Add medication recommendations if available
-    if (category.recommended_medications.length > 0) {
+    if (category.recommended_medications && category.recommended_medications.length > 0) {
       category.recommended_medications.forEach(medId => {
         if (!allMedicationIds.includes(medId)) {
           allMedicationIds.push(medId);
@@ -62,11 +65,13 @@ export const processUserSymptoms = async (userInput: string): Promise<BotRespons
     }
     
     // Add self-care advice
-    category.self_care_advice.forEach(advice => {
-      if (!allSelfCareAdvice.includes(advice)) {
-        allSelfCareAdvice.push(advice);
-      }
-    });
+    if (category.self_care_advice && category.self_care_advice.length > 0) {
+      category.self_care_advice.forEach(advice => {
+        if (!allSelfCareAdvice.includes(advice)) {
+          allSelfCareAdvice.push(advice);
+        }
+      });
+    }
     
     // Check if medical attention is recommended
     if (category.seek_medical_attention) {
@@ -76,19 +81,28 @@ export const processUserSymptoms = async (userInput: string): Promise<BotRespons
   
   // Add medication details to response
   if (allMedicationIds.length > 0) {
+    console.log("Buscando medicamentos con IDs:", allMedicationIds);
     const recommendedMeds = await getMedicationsByIds(allMedicationIds);
-    responseMessage += "\n**Medicamentos de venta libre que podrían ayudar**:\n";
+    console.log("Medicamentos encontrados:", recommendedMeds.length);
     
-    recommendedMeds.forEach(med => {
-      responseMessage += `- **${med.name}** (${med.active_ingredient}): ${med.dosage}\n`;
-      responseMessage += `  Usado para: ${med.used_for.join(", ")}\n`;
-      if (med.contraindications.length > 0) {
-        responseMessage += `  No usar si tiene: ${med.contraindications.join(", ")}\n`;
-      }
-      if (med.source) {
-        responseMessage += `  Fuente: ${med.source}\n`;
-      }
-    });
+    if (recommendedMeds.length > 0) {
+      responseMessage += "\n**Medicamentos de venta libre que podrían ayudar**:\n";
+      
+      recommendedMeds.forEach(med => {
+        responseMessage += `- **${med.name}** (${med.active_ingredient}): ${med.dosage}\n`;
+        responseMessage += `  Usado para: ${med.used_for.join(", ")}\n`;
+        if (med.contraindications && med.contraindications.length > 0) {
+          responseMessage += `  No usar si tiene: ${med.contraindications.join(", ")}\n`;
+        }
+        if (med.source) {
+          responseMessage += `  Fuente: ${med.source}\n`;
+        }
+      });
+    } else {
+      responseMessage += "\n**No se encontraron detalles de medicamentos recomendados en nuestra base de datos.**\n";
+    }
+  } else {
+    responseMessage += "\n**No hay medicamentos específicos recomendados para estos síntomas.**\n";
   }
   
   // Add self-care advice to response
